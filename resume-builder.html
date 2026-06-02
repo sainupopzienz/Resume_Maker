@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Resume Builder</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+
+/* ── APP SHELL ── */
+body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);min-height:100vh;color:#333}
+
+header{text-align:center;padding:44px 20px 28px}
+header h1{font-size:2.6rem;font-weight:800;color:#fff}
+header h1 span{color:#a78bfa}
+header p{color:#c4b5fd;margin-top:6px;font-size:1rem}
+
+.app{display:grid;grid-template-columns:1fr 1fr;gap:28px;max-width:1440px;margin:0 auto;padding:0 24px 60px}
+@media(max-width:960px){.app{grid-template-columns:1fr}}
+
+/* ── FORM PANEL ── */
+.form-panel{background:rgba(255,255,255,.05);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:28px}
+
+.sec-title{font-size:.65rem;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#a78bfa;margin:26px 0 12px;display:flex;align-items:center;gap:10px}
+.sec-title::after{content:'';flex:1;height:1px;background:rgba(167,139,250,.3)}
+.sec-title:first-child{margin-top:0}
+
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.row.full{grid-template-columns:1fr}
+
+label{display:flex;flex-direction:column;gap:5px;font-size:.75rem;font-weight:600;color:#d1c4e9;letter-spacing:.3px}
+input,textarea,select{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:9px;padding:9px 13px;color:#fff;font-size:.88rem;font-family:inherit;outline:none;width:100%;transition:border-color .2s,background .2s}
+input::placeholder,textarea::placeholder{color:rgba(255,255,255,.3)}
+input:focus,textarea:focus,select:focus{border-color:#a78bfa;background:rgba(167,139,250,.12)}
+textarea{resize:vertical;min-height:80px}
+select option{background:#302b63;color:#fff}
+
+.entry-block{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px;margin-bottom:10px;position:relative}
+.entry-block .row{margin-bottom:10px}
+.entry-block .row:last-of-type{margin-bottom:0}
+
+.btn-remove{position:absolute;top:10px;right:10px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171;border-radius:7px;padding:3px 9px;font-size:.72rem;cursor:pointer;transition:background .2s}
+.btn-remove:hover{background:rgba(239,68,68,.3)}
+
+.btn-add{width:100%;background:rgba(167,139,250,.1);border:1px dashed rgba(167,139,250,.4);color:#a78bfa;border-radius:9px;padding:9px;font-size:.83rem;cursor:pointer;transition:background .2s;margin-top:2px}
+.btn-add:hover{background:rgba(167,139,250,.2)}
+
+/* skill-category rows */
+.skill-row{display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:10px}
+
+/* lang stars */
+.star-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.star-btn{font-size:1.1rem;cursor:pointer;background:none;border:none;color:#a78bfa;padding:0;line-height:1;transition:transform .1s}
+.star-btn:hover{transform:scale(1.2)}
+.star-label{font-size:.75rem;color:#c4b5fd;min-width:60px}
+
+.btn-download{width:100%;margin-top:26px;background:linear-gradient(135deg,#7c3aed,#a78bfa);border:none;border-radius:12px;padding:13px;color:#fff;font-size:.95rem;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:transform .15s,box-shadow .15s;box-shadow:0 4px 20px rgba(124,58,237,.4)}
+.btn-download:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(124,58,237,.6)}
+.btn-download:active{transform:translateY(0)}
+
+/* ── PREVIEW ── */
+.preview-panel{position:sticky;top:24px;height:fit-content}
+.preview-label{font-size:.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#a78bfa;margin-bottom:12px}
+.preview-wrap{background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.4);overflow:hidden;transform-origin:top center}
+
+/* ═══════════════════════════════════════════════
+   RESUME TEMPLATE  —  matches the PDF exactly
+═══════════════════════════════════════════════ */
+#resume{
+  font-family:'Segoe UI',Arial,sans-serif;
+  background:#fff;
+  color:#222;
+  width:794px;
+  min-height:1123px;
+  font-size:9.2pt;
+  line-height:1.45;
+}
+
+/* header */
+.rv-header{background:#1e3050;text-align:center;padding:28px 40px 22px}
+.rv-name{font-size:22pt;font-weight:900;color:#fff;letter-spacing:2px;text-transform:uppercase;line-height:1.1}
+.rv-role{font-size:8.5pt;letter-spacing:6px;text-transform:uppercase;color:#a8c0e0;margin-top:6px;font-weight:400}
+.rv-contact-bar{background:#253d60;padding:8px 40px;text-align:center;font-size:7.8pt;color:#d0dff0;letter-spacing:.3px}
+.rv-contact-bar span{margin:0 6px}
+.rv-contact-bar .sep{color:#6a88ab;margin:0 4px}
+
+/* body */
+.rv-body{padding:20px 36px 28px}
+
+/* section */
+.rv-sec{margin-bottom:16px}
+.rv-sec-title{font-size:7pt;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#1e3050;border-bottom:1.5px solid #1e3050;padding-bottom:4px;margin-bottom:10px}
+
+/* summary */
+.rv-summary{font-size:8.8pt;color:#2c2c2c;line-height:1.6;text-align:justify}
+
+/* skills table */
+.rv-skills-table{width:100%;border-collapse:collapse}
+.rv-skills-table td{padding:3px 6px 3px 0;font-size:8.4pt;vertical-align:top}
+.rv-skills-table td:first-child{font-weight:700;color:#1a1a2e;white-space:nowrap;padding-right:12px;width:185px}
+.rv-skills-table tr:not(:last-child) td{border-bottom:1px solid #f0f0f0}
+
+/* certifications */
+.rv-cert-list{list-style:none;padding:0}
+.rv-cert-list li{font-size:8.4pt;color:#2c2c2c;padding:2px 0 2px 14px;position:relative}
+.rv-cert-list li::before{content:'•';position:absolute;left:2px;color:#1e3050;font-size:10pt;line-height:1.1}
+
+/* work history */
+.rv-job{margin-bottom:14px}
+.rv-job-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px}
+.rv-company{font-size:9.5pt;font-weight:800;color:#1e3050;text-transform:uppercase;letter-spacing:.5px}
+.rv-company::before{content:'■ ';font-size:7pt;color:#1e3050}
+.rv-dates{font-size:7.8pt;color:#666;font-style:italic}
+.rv-jobtitle{font-size:8.8pt;font-weight:700;color:#2c2c2c;margin-bottom:5px}
+.rv-bullets{list-style:none;padding:0}
+.rv-bullets li{font-size:8.3pt;color:#2c2c2c;padding:2px 0 2px 14px;position:relative;line-height:1.55}
+.rv-bullets li::before{content:'•';position:absolute;left:2px;color:#1e3050;font-size:10pt;line-height:1.1}
+
+/* education */
+.rv-edu-row{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px}
+.rv-edu-degree{font-size:8.8pt;font-weight:700;color:#2c2c2c}
+.rv-edu-school{font-size:8.4pt;color:#2c2c2c}
+.rv-edu-date{font-size:7.8pt;color:#666;font-style:italic}
+
+/* languages */
+.rv-lang-row{display:flex;gap:24px;flex-wrap:wrap;font-size:8.4pt}
+.rv-lang-item{display:flex;gap:6px;align-items:center}
+.rv-lang-name{font-weight:700;color:#1a1a2e}
+.rv-lang-level{color:#1e3050;letter-spacing:1px}
+
+/* scrollbar */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-thumb{background:rgba(167,139,250,.4);border-radius:99px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Resume <span>Builder</span></h1>
+  <p>Fill in your details · Preview live · Download as PDF</p>
+</header>
+
+<div class="app">
+
+<!-- ══ FORM ══ -->
+<div class="form-panel">
+
+  <div class="sec-title">Personal Info</div>
+  <div class="row">
+    <label>Full Name <input id="fullName" placeholder="Sainudeen Safar" oninput="render()"></label>
+    <label>Job Title <input id="jobTitle" placeholder="DevOps Engineer" oninput="render()"></label>
+  </div>
+  <div class="row">
+    <label>Email <input id="email" placeholder="you@email.com" oninput="render()"></label>
+    <label>Phone <input id="phone" placeholder="+91 0000000000" oninput="render()"></label>
+  </div>
+  <div class="row">
+    <label>Location / Address <input id="location" placeholder="City, State PIN" oninput="render()"></label>
+    <label>LinkedIn (optional) <input id="linkedin" placeholder="linkedin.com/in/you" oninput="render()"></label>
+  </div>
+  <div class="row full">
+    <label>Website / GitHub (optional) <input id="website" placeholder="github.com/you" oninput="render()"></label>
+  </div>
+
+  <div class="sec-title">Professional Summary</div>
+  <label>Summary
+    <textarea id="summary" rows="4" placeholder="DevOps Engineer with 3+ years of experience..." oninput="render()"></textarea>
+  </label>
+
+  <div class="sec-title">Skills</div>
+  <div id="skillsList"></div>
+  <button class="btn-add" onclick="addSkillRow()">+ Add Skill Category</button>
+
+  <div class="sec-title">Certifications</div>
+  <div id="certList"></div>
+  <button class="btn-add" onclick="addEntry('cert')">+ Add Certification</button>
+
+  <div class="sec-title">Work History</div>
+  <div id="expList"></div>
+  <button class="btn-add" onclick="addEntry('exp')">+ Add Job</button>
+
+  <div class="sec-title">Education</div>
+  <div id="eduList"></div>
+  <button class="btn-add" onclick="addEntry('edu')">+ Add Education</button>
+
+  <div class="sec-title">Languages</div>
+  <div id="langList"></div>
+  <button class="btn-add" onclick="addEntry('lang')">+ Add Language</button>
+
+  <button class="btn-download" onclick="downloadPDF()">⬇ Download PDF Resume</button>
+</div>
+
+<!-- ══ PREVIEW ══ -->
+<div class="preview-panel">
+  <div class="preview-label">Live Preview</div>
+  <div class="preview-wrap">
+    <div id="resume"></div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+// ── STATE ──────────────────────────────────────────
+const S = {
+  skills: [],   // {id, category, items}
+  cert:   [],   // {id, name, credId}
+  exp:    [],   // {id, company, jobtitle, dates, bullets}
+  edu:    [],   // {id, degree, field, school, date}
+  lang:   [],   // {id, name, stars}
+};
+
+let idSeed = 1;
+const uid = () => idSeed++;
+
+// ── SKILL ROWS ────────────────────────────────────
+function addSkillRow(data={}) {
+  const id = uid();
+  S.skills.push({ id, category: data.category||'', items: data.items||'' });
+  renderSkillForms();
+  render();
+}
+function removeSkillRow(id){ S.skills=S.skills.filter(s=>s.id!==id); renderSkillForms(); render(); }
+function updateSkill(id,field,val){ const s=S.skills.find(s=>s.id===id); if(s){s[field]=val; render();} }
+
+function renderSkillForms(){
+  const c=document.getElementById('skillsList'); c.innerHTML='';
+  S.skills.forEach(s=>{
+    const d=document.createElement('div'); d.className='entry-block';
+    d.innerHTML=`
+      <button class="btn-remove" onclick="removeSkillRow(${s.id})">✕</button>
+      <div class="skill-row">
+        <label>Category<input placeholder="Cloud Platforms" value="${esc(s.category)}" oninput="updateSkill(${s.id},'category',this.value)"></label>
+        <label>Tools / Technologies<input placeholder="AWS, Azure, GCP..." value="${esc(s.items)}" oninput="updateSkill(${s.id},'items',this.value)"></label>
+      </div>`;
+    c.appendChild(d);
+  });
+}
+
+// ── GENERIC ENTRIES ───────────────────────────────
+const entryTemplates = {
+  cert: {
+    render(e){ return `
+      <div class="entry-block">
+        <button class="btn-remove" onclick="removeEntry('cert',${e.id})">✕</button>
+        <div class="row">
+          <label>Certificate Name<input placeholder="AWS Solutions Architect" value="${esc(e.name)}" oninput="updateEntry('cert',${e.id},'name',this.value)"></label>
+          <label>Credential ID (optional)<input placeholder="ID: abc123" value="${esc(e.credId)}" oninput="updateEntry('cert',${e.id},'credId',this.value)"></label>
+        </div>
+      </div>`; },
+    defaults(){ return {name:'',credId:''}; }
+  },
+  exp: {
+    render(e){ return `
+      <div class="entry-block">
+        <button class="btn-remove" onclick="removeEntry('exp',${e.id})">✕</button>
+        <div class="row">
+          <label>Company<input placeholder="INNOVATURE" value="${esc(e.company)}" oninput="updateEntry('exp',${e.id},'company',this.value)"></label>
+          <label>Dates<input placeholder="Mar 2025 - Present" value="${esc(e.dates)}" oninput="updateEntry('exp',${e.id},'dates',this.value)"></label>
+        </div>
+        <div class="row full" style="margin-bottom:10px">
+          <label>Job Title<input placeholder="DevOps Engineer" value="${esc(e.jobtitle)}" oninput="updateEntry('exp',${e.id},'jobtitle',this.value)"></label>
+        </div>
+        <label>Bullet Points (one per line, start each with •)<textarea rows="5" placeholder="• Architected and managed...&#10;• Designed reusable Terraform modules..." oninput="updateEntry('exp',${e.id},'bullets',this.value)">${esc(e.bullets)}</textarea></label>
+      </div>`; },
+    defaults(){ return {company:'',dates:'',jobtitle:'',bullets:''}; }
+  },
+  edu: {
+    render(e){ return `
+      <div class="entry-block">
+        <button class="btn-remove" onclick="removeEntry('edu',${e.id})">✕</button>
+        <div class="row">
+          <label>Degree<input placeholder="Bachelor of Commerce (BCom)" value="${esc(e.degree)}" oninput="updateEntry('edu',${e.id},'degree',this.value)"></label>
+          <label>Field<input placeholder="Commerce" value="${esc(e.field)}" oninput="updateEntry('edu',${e.id},'field',this.value)"></label>
+        </div>
+        <div class="row">
+          <label>School / College<input placeholder="MES College, Kottayam" value="${esc(e.school)}" oninput="updateEntry('edu',${e.id},'school',this.value)"></label>
+          <label>Graduation Date<input placeholder="Jun 2022" value="${esc(e.date)}" oninput="updateEntry('edu',${e.id},'date',this.value)"></label>
+        </div>
+      </div>`; },
+    defaults(){ return {degree:'',field:'',school:'',date:''}; }
+  },
+  lang: {
+    render(e){ return `
+      <div class="entry-block">
+        <button class="btn-remove" onclick="removeEntry('lang',${e.id})">✕</button>
+        <div class="row">
+          <label>Language<input placeholder="English" value="${esc(e.name)}" oninput="updateEntry('lang',${e.id},'name',this.value)"></label>
+          <label>Proficiency
+            <select onchange="updateEntry('lang',${e.id},'stars',this.value)">
+              <option value="Native" ${e.stars==='Native'?'selected':''}>Native</option>
+              <option value="5" ${e.stars==='5'?'selected':''}>★★★★★ Fluent</option>
+              <option value="4" ${e.stars==='4'?'selected':''}>★★★★☆ Advanced</option>
+              <option value="3" ${e.stars==='3'?'selected':''}>★★★☆☆ Intermediate</option>
+              <option value="2" ${e.stars==='2'?'selected':''}>★★☆☆☆ Basic</option>
+            </select>
+          </label>
+        </div>
+      </div>`; },
+    defaults(){ return {name:'',stars:'5'}; }
+  },
+};
+
+function addEntry(type, data={}){
+  const id=uid();
+  S[type].push({id,...entryTemplates[type].defaults(),...data});
+  renderAllForms(); render();
+}
+function removeEntry(type,id){ S[type]=S[type].filter(e=>e.id!==id); renderAllForms(); render(); }
+function updateEntry(type,id,field,val){ const e=S[type].find(e=>e.id===id); if(e){e[field]=val; render();} }
+
+function renderAllForms(){
+  ['cert','exp','edu','lang'].forEach(type=>{
+    const c=document.getElementById(type+'List'); c.innerHTML='';
+    S[type].forEach(e=>{ c.innerHTML+=entryTemplates[type].render(e); });
+  });
+}
+
+// ── UTILS ─────────────────────────────────────────
+function esc(s=''){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function bulletsToHtml(text=''){
+  const lines=text.split('\n').filter(l=>l.trim());
+  if(!lines.length) return '';
+  return '<ul class="rv-bullets">'+lines.map(l=>`<li>${esc(l.replace(/^[•\-]\s*/,'').trim())}</li>`).join('')+'</ul>';
+}
+
+function starsHtml(val){
+  if(val==='Native') return '<span class="rv-lang-level">Native</span>';
+  const n=parseInt(val)||5;
+  return '<span class="rv-lang-level">'+('★'.repeat(n)+'☆'.repeat(5-n))+'</span>';
+}
+
+// ── RENDER RESUME ─────────────────────────────────
+function render(){
+  const fullName = document.getElementById('fullName').value||'YOUR NAME';
+  const jobTitle = document.getElementById('jobTitle').value||'';
+  const email    = document.getElementById('email').value;
+  const phone    = document.getElementById('phone').value;
+  const location = document.getElementById('location').value;
+  const linkedin = document.getElementById('linkedin').value;
+  const website  = document.getElementById('website').value;
+  const summary  = document.getElementById('summary').value;
+
+  // contact bar
+  const contactParts=[location,email,phone,linkedin,website].filter(Boolean);
+  const contactBar = contactParts.map(esc).join(' <span class="sep">|</span> ');
+
+  // skills table
+  const skillsTable = S.skills.length
+    ? `<table class="rv-skills-table"><tbody>${
+        S.skills.map(s=>`<tr><td>${esc(s.category)}</td><td>${esc(s.items)}</td></tr>`).join('')
+      }</tbody></table>`
+    : '<p style="font-size:8pt;color:#aaa">No skills added yet.</p>';
+
+  // certifications
+  const certSection = S.cert.length
+    ? `<ul class="rv-cert-list">${S.cert.map(c=>`<li>${esc(c.name)}${c.credId?' | '+esc(c.credId):''}</li>`).join('')}</ul>`
+    : '<p style="font-size:8pt;color:#aaa">No certifications added yet.</p>';
+
+  // work history
+  const expSection = S.exp.length
+    ? S.exp.map(e=>`
+      <div class="rv-job">
+        <div class="rv-job-header">
+          <span class="rv-company">${esc(e.company||'COMPANY')}</span>
+          <span class="rv-dates">${esc(e.dates)}</span>
+        </div>
+        <div class="rv-jobtitle">${esc(e.jobtitle)}</div>
+        ${bulletsToHtml(e.bullets)}
+      </div>`).join('')
+    : '<p style="font-size:8pt;color:#aaa">No work history added yet.</p>';
+
+  // education
+  const eduSection = S.edu.length
+    ? S.edu.map(e=>`
+      <div class="rv-edu-row">
+        <div>
+          <span class="rv-edu-degree">${esc(e.degree)}${e.field?' | '+esc(e.field):''}</span>
+          ${e.school?` &nbsp;— <span class="rv-edu-school">${esc(e.school)}</span>`:''}
+        </div>
+        ${e.date?`<span class="rv-edu-date">${esc(e.date)}</span>`:''}
+      </div>`).join('')
+    : '<p style="font-size:8pt;color:#aaa">No education added yet.</p>';
+
+  // languages
+  const langSection = S.lang.length
+    ? `<div class="rv-lang-row">${S.lang.map(l=>`
+        <div class="rv-lang-item">
+          <span class="rv-lang-name">${esc(l.name)}:</span>
+          ${starsHtml(l.stars)}
+        </div>`).join('')}</div>`
+    : '<p style="font-size:8pt;color:#aaa">No languages added yet.</p>';
+
+  document.getElementById('resume').innerHTML=`
+  <div class="rv-header">
+    <div class="rv-name">${esc(fullName)}</div>
+    ${jobTitle?`<div class="rv-role">${esc(jobTitle.toUpperCase().split('').join(' '))}</div>`:''}
+  </div>
+  ${contactBar?`<div class="rv-contact-bar">${contactBar}</div>`:''}
+  <div class="rv-body">
+
+    ${summary?`<div class="rv-sec">
+      <div class="rv-sec-title">Professional Summary</div>
+      <div class="rv-summary">${esc(summary)}</div>
+    </div>`:''}
+
+    <div class="rv-sec">
+      <div class="rv-sec-title">Skills</div>
+      ${skillsTable}
+    </div>
+
+    <div class="rv-sec">
+      <div class="rv-sec-title">Certifications</div>
+      ${certSection}
+    </div>
+
+    <div class="rv-sec">
+      <div class="rv-sec-title">Work History</div>
+      ${expSection}
+    </div>
+
+    <div class="rv-sec">
+      <div class="rv-sec-title">Education</div>
+      ${eduSection}
+    </div>
+
+    <div class="rv-sec">
+      <div class="rv-sec-title">Languages</div>
+      ${langSection}
+    </div>
+
+  </div>`;
+}
+
+// ── PDF ───────────────────────────────────────────
+function downloadPDF(){
+  const name=(document.getElementById('fullName').value||'Resume').replace(/\s+/g,'_');
+  html2pdf().set({
+    margin:0,
+    filename:`${name}_Resume.pdf`,
+    image:{type:'jpeg',quality:0.98},
+    html2canvas:{scale:2,useCORS:true,letterRendering:true},
+    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+  }).from(document.getElementById('resume')).save();
+}
+
+// ── INIT ──────────────────────────────────────────
+// Seed with Sainudeen's data as an example
+document.getElementById('fullName').value   = 'Sainudeen Safar';
+document.getElementById('jobTitle').value   = 'DevOps Engineer';
+document.getElementById('email').value      = 'sainudeensaffar@gmail.com';
+document.getElementById('phone').value      = '+91 6282656572';
+document.getElementById('location').value   = 'Thenemmakkal House, Kanjirappally, Kerala 686507';
+document.getElementById('summary').value    = 'DevOps Engineer with 3+ years of experience in automating deployments, optimizing cloud infrastructure, and streamlining CI/CD pipelines. Proficient in AWS, Terraform, Kubernetes, Docker, and Python. Experienced in end-to-end cloud infrastructure management, designing and automating product deployments, enforcing platform operational standards, and collaborating with cross-functional teams to deliver reliable, scalable, and highly available systems.';
+
+addSkillRow({category:'Cloud Platforms', items:'AWS (EC2, ECS, EKS, Lambda, RDS, Redshift, ElastiCache, S3, CloudFront, WAF, VPC, IAM, CloudWatch, Systems Manager), Azure'});
+addSkillRow({category:'Containers & Orchestration', items:'Docker, Kubernetes, Podman'});
+addSkillRow({category:'Infrastructure as Code', items:'Terraform, CloudFormation, Crossplane'});
+addSkillRow({category:'CI/CD & Automation', items:'Jenkins, GitLab CI/CD, GitHub Actions, ArgoCD, Ansible Tower, CodeBuild, CodePipeline, BitbucketPipelines'});
+addSkillRow({category:'Scripting & Programming', items:'Python, Bash — automation scripts, deployment tooling, infrastructure automation, and AWS Lambda functions'});
+addSkillRow({category:'Monitoring & Observability', items:'Prometheus, Grafana, Loki, CloudWatch, Zabbix, Fluentd/Bit, Datadog, NewRelic'});
+addSkillRow({category:'Config Management', items:'Ansible, Ansible Tower, Chef, Puppet'});
+addSkillRow({category:'Linux Administration', items:'Red Hat, Amazon Linux, Ubuntu, CentOS, Fedora'});
+addSkillRow({category:'Databases & Messaging', items:'PostgreSQL, MySQL, Redis, SQS (DLQ), Redshift'});
+addSkillRow({category:'Security & Networking', items:'IAM, Secrets Manager, WAF, Zero-Trust model, SELinux, SSH hardening'});
+
+addEntry('cert',{name:'AWS Certified Solutions Architect - Professional', credId:'ID: 34b3b6831667465d878033a92a81bd86'});
+addEntry('cert',{name:'Certified Kubernetes Administrator (CKA)', credId:'ID: LF-i9vjb12hfk'});
+addEntry('cert',{name:'Red Hat Certified Engineer (RHCE)', credId:'ID: 230-018-053'});
+addEntry('cert',{name:'Red Hat Certified System Administrator (RHCSA)', credId:'ID: 230-018-053'});
+addEntry('cert',{name:'Oracle Cloud Infrastructure 2025 Certified Multicloud Architect Professional'});
+addEntry('cert',{name:'Oracle Cloud Infrastructure 2025 Certified AI Foundations Associate'});
+addEntry('cert',{name:'Oracle Cloud Infrastructure 2025 Certified Foundations Associate'});
+addEntry('cert',{name:'Oracle Data Platform 2025 Certified Foundations Associate'});
+
+addEntry('exp',{company:'INNOVATURE', dates:'Mar 2025 - Present', jobtitle:'DevOps Engineer', bullets:`• Architected and managed end-to-end AWS ECS deployments for PHP/Python/Java applications with autoscaling, achieving 99.95% availability and 40% faster deployment cycles.
+• Designed and automated cloud infrastructure deployments using reusable Terraform modules managing VPC, ECS clusters, and RDS across 10+ projects, reducing provisioning time from 4 hours to 15 minutes.
+• Automated end-to-end CI/CD pipelines using Jenkins + GitLab CI/CD + Ansible Tower, cutting deployment frequency from weekly to 20+ daily releases.
+• Deployed and managed robust observability stack (Prometheus/Grafana/CloudWatch/Loki) with custom dashboards, reducing MTTR from 4 hours to 12 minutes.
+• Developed Python automation scripts for deployment tooling, infrastructure health checks, and operational runbooks, reducing manual intervention by 35%.
+• Enforced standard practices for platform operations; implemented reusable pipeline components and IaC modules across all client projects.
+• Participated in strategic project-planning meetings; collaborated with dev/QA teams achieving 100% on-time delivery for 5 major client projects.
+• Tuned existing applications and ECS/Kubernetes platforms for better performance, resilience, and cost efficiency.`});
+
+addEntry('exp',{company:'PIXDYNAMICS', dates:'Oct 2023 - Jan 2025', jobtitle:'Junior DevOps Engineer', bullets:`• Designed multi-environment CI/CD pipelines (Jenkins/GitLab/ArgoCD) across Dev/QA/Prod, enabling zero-downtime deployments for 15+ microservices.
+• Optimized AWS infrastructure reducing costs by 15% ($12K/year savings) and security incidents by 25% through rightsizing and IAM optimization.
+• Migrated 20+ on-premise applications to AWS EKS with under 2 hours total downtime, maintaining 99.9% SLA during transition.
+• Containerized applications with Docker and orchestrated on EKS clusters serving 50K+ daily requests with horizontal pod autoscaling.
+• Automated infrastructure provisioning with Terraform/CloudFormation, eliminating 60% manual effort and enabling self-service deployments.
+• Wrote Python scripts for automated resource tagging, cost reporting, and incident remediation workflows.`});
+
+addEntry('exp',{company:'GIGLABZ', dates:'Jun 2023 - Sep 2023', jobtitle:'Infrastructure Engineer', bullets:`• Deployed CloudWatch monitoring suite reducing downtime by 50% through predictive alerting and automated remediation.
+• Architected serverless Lambda functions (Python) replacing EC2 workloads, cutting operational costs by 30% and scaling to 10K+ concurrent executions.
+• Managed Multi-AZ RDS (MySQL/PostgreSQL) clusters maintaining 99.99% uptime with automated failover and point-in-time recovery.
+• Implemented zero-trust security model with IAM roles, Secrets Manager, and WAF, reducing unauthorized access by 35%.`});
+
+addEntry('exp',{company:'IPSR LIMITED', dates:'Jul 2022 - Jan 2023', jobtitle:'System Administrator Trainee', bullets:`• Performed Linux administration including OS updates, package management, and advanced log analysis for production systems.
+• Deployed and maintained containerized applications using Docker, establishing containerization best practices.
+• Strengthened system security implementing SELinux policies, SSH hardening, and LUKS encryption for data at rest.
+• Configured LVM for flexible storage management and optimized service performance using cron/anacron job scheduling.`});
+
+addEntry('edu',{degree:'Bachelor of Commerce (BCom)', field:'Commerce', school:'MES College, Erattupetta, Kottayam', date:'Jun 2022'});
+
+addEntry('lang',{name:'Malayalam', stars:'Native'});
+addEntry('lang',{name:'English', stars:'5'});
+addEntry('lang',{name:'Hindi', stars:'4'});
+
+render();
+</script>
+</body>
+</html>
