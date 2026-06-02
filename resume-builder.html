@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Resume Builder</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<!-- html2pdf removed — using browser print engine instead -->
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 
@@ -188,7 +188,7 @@ select option{background:#302b63;color:#fff}
   <div id="langList"></div>
   <button class="btn-add" onclick="addEntry('lang')">+ Add Language</button>
 
-  <button class="btn-download" onclick="downloadPDF()">⬇ Download PDF Resume</button>
+  <button class="btn-download" onclick="downloadPDF()">🖨 Print / Save as PDF</button>
 </div>
 
 <!-- ══ PREVIEW ══ -->
@@ -434,57 +434,61 @@ function render(){
   </div>`;
 }
 
-// ── PDF ───────────────────────────────────────────
-async function downloadPDF(){
-  const name = (document.getElementById('fullName').value||'Resume').replace(/\s+/g,'_');
-  const btn  = document.querySelector('.btn-download');
-  btn.disabled = true;
-  btn.textContent = '⏳ Generating PDF…';
+// ── PDF — browser print engine (100% reliable) ────
+function downloadPDF(){
+  // Grab the resume HTML and all inline styles from this page
+  const resumeHTML = document.getElementById('resume').outerHTML;
+  const resumeCSS  = document.querySelector('style').innerHTML;
 
-  const el          = document.getElementById('resume');
-  const previewWrap = el.parentElement;        // .preview-wrap (overflow:hidden, transformed)
+  const win = window.open('', '_blank');
+  if(!win){ alert('Please allow popups for this page, then try again.'); return; }
 
-  // ── 1. Physically move #resume to <body> so html2canvas
-  //       has no clipping parent and no transform to fight ──
-  previewWrap.removeChild(el);
-  el.style.cssText = [
-    'position:fixed',
-    'top:0',
-    'left:-9999px',
-    'width:794px',
-    'background:#fff',
-    'transform:none',
-    'overflow:visible',
-  ].join(';');
-  document.body.appendChild(el);
-
-  // ── 2. Small delay so browser fully paints at new position ──
-  await new Promise(r => setTimeout(r, 120));
-
-  try {
-    await html2pdf().set({
-      margin      : 0,
-      filename    : `${name}_Resume.pdf`,
-      image       : { type: 'jpeg', quality: 0.98 },
-      html2canvas : {
-        scale          : 2,
-        useCORS        : true,
-        letterRendering: true,
-        backgroundColor: '#ffffff',
-        windowWidth    : 794,
-        scrollX        : 0,
-        scrollY        : 0,
-      },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    }).from(el).save();
-  } finally {
-    // ── 3. Move #resume back into preview ──
-    document.body.removeChild(el);
-    el.style.cssText = '';
-    previewWrap.appendChild(el);
-    btn.disabled = false;
-    btn.textContent = '⬇ Download PDF Resume';
-  }
+  win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <title>Resume</title>
+  <style>
+    /* reset */
+    *{box-sizing:border-box;margin:0;padding:0}
+    /* pull in all resume styles */
+    ${resumeCSS}
+    /* print overrides */
+    html,body{
+      width:210mm;
+      background:#fff !important;
+    }
+    #resume{
+      width:210mm !important;
+      min-height:297mm;
+      margin:0 !important;
+      padding:0 !important;
+      font-size:9.2pt;
+    }
+    @page{
+      size:A4 portrait;
+      margin:0;
+    }
+    @media print{
+      html,body{width:210mm;}
+      #resume{page-break-inside:avoid;}
+    }
+  </style>
+</head>
+<body>
+  ${resumeHTML}
+  <script>
+    window.onload = function(){
+      setTimeout(function(){
+        window.print();
+        // close the tab after the print dialog is dismissed
+        window.addEventListener('afterprint', function(){ window.close(); });
+      }, 400);
+    };
+  <\/script>
+</body>
+</html>`);
+  win.document.close();
 }
 
 // ── INIT ──────────────────────────────────────────
