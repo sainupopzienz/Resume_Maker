@@ -435,33 +435,56 @@ function render(){
 }
 
 // ── PDF ───────────────────────────────────────────
-function downloadPDF(){
-  const name=(document.getElementById('fullName').value||'Resume').replace(/\s+/g,'_');
+async function downloadPDF(){
+  const name = (document.getElementById('fullName').value||'Resume').replace(/\s+/g,'_');
+  const btn  = document.querySelector('.btn-download');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating PDF…';
 
-  // Clone the resume and render it off-screen at full size so
-  // html2canvas doesn't capture the scaled/clipped preview version
-  const original = document.getElementById('resume');
-  const clone = original.cloneNode(true);
-  clone.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: -9999px;
-    width: 794px;
-    transform: none;
-    z-index: -1;
-    background: #fff;
-  `;
-  document.body.appendChild(clone);
+  const el          = document.getElementById('resume');
+  const previewWrap = el.parentElement;        // .preview-wrap (overflow:hidden, transformed)
 
-  html2pdf().set({
-    margin: 0,
-    filename: `${name}_Resume.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true, letterRendering: true, windowWidth: 794 },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-  }).from(clone).save().finally(() => {
-    document.body.removeChild(clone);
-  });
+  // ── 1. Physically move #resume to <body> so html2canvas
+  //       has no clipping parent and no transform to fight ──
+  previewWrap.removeChild(el);
+  el.style.cssText = [
+    'position:fixed',
+    'top:0',
+    'left:-9999px',
+    'width:794px',
+    'background:#fff',
+    'transform:none',
+    'overflow:visible',
+  ].join(';');
+  document.body.appendChild(el);
+
+  // ── 2. Small delay so browser fully paints at new position ──
+  await new Promise(r => setTimeout(r, 120));
+
+  try {
+    await html2pdf().set({
+      margin      : 0,
+      filename    : `${name}_Resume.pdf`,
+      image       : { type: 'jpeg', quality: 0.98 },
+      html2canvas : {
+        scale          : 2,
+        useCORS        : true,
+        letterRendering: true,
+        backgroundColor: '#ffffff',
+        windowWidth    : 794,
+        scrollX        : 0,
+        scrollY        : 0,
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    }).from(el).save();
+  } finally {
+    // ── 3. Move #resume back into preview ──
+    document.body.removeChild(el);
+    el.style.cssText = '';
+    previewWrap.appendChild(el);
+    btn.disabled = false;
+    btn.textContent = '⬇ Download PDF Resume';
+  }
 }
 
 // ── INIT ──────────────────────────────────────────
