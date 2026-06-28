@@ -1,4 +1,5 @@
 from openai import OpenAI
+import json
 import os
 
 client = OpenAI(
@@ -6,49 +7,70 @@ client = OpenAI(
     base_url="https://api.groq.com/openai/v1"
 )
 
-# ----------------------------
-# Read logs (from file or CI)
-# ----------------------------
+# ------------------------
+# LOAD BUILD LOG
+# ------------------------
 try:
     with open("build.log", "r") as f:
-        logs = f.read()
+        build_logs = f.read()
 except:
-    logs = "No build.log found. Capture CI logs for debugging."
+    build_logs = None
 
-# ----------------------------
-# Optional context files
-# ----------------------------
+# ------------------------
+# LOAD TRIVY SCAN
+# ------------------------
 try:
-    with open("Dockerfile", "r") as f:
-        dockerfile = f.read()
+    with open("scan.json", "r") as f:
+        scan_data = json.load(f)
 except:
-    dockerfile = "No Dockerfile found."
+    scan_data = None
 
-# ----------------------------
-# Prompt for Groq
-# ----------------------------
+# ------------------------
+# SMART PROMPT (IMPORTANT PART)
+# ------------------------
 prompt = f"""
-You are a senior DevOps engineer.
+You are a Senior DevOps + DevSecOps engineer.
 
-Analyze this CI/CD failure.
+You MUST analyze BOTH sections if available.
 
---- Dockerfile ---
-{dockerfile}
+RULES:
+1. Always prioritize BUILD FAILURE first if present
+2. Then analyze SECURITY (Trivy CVEs)
+3. If both exist, merge into a single structured report
+4. Provide actionable fixes for each issue
 
---- Build Logs ---
-{logs}
+---
 
-Tasks:
-1. Identify root cause
-2. Explain in simple terms
-3. Suggest fix
-4. Provide improved Dockerfile if needed
-5. Write a short failure summary for engineers
+BUILD FAILURE LOGS:
+{build_logs if build_logs else "No build failure detected"}
+
+---
+
+TRIVY SECURITY SCAN:
+{json.dumps(scan_data, indent=2) if scan_data else "No security issues detected"}
+
+---
+
+OUTPUT FORMAT:
+
+## 🚨 Primary Issue (Build / CI Failure)
+- Root cause
+- Fix
+- Suggested Dockerfile/code change
+
+## ⚠️ Security Issues (CVEs)
+- List HIGH/CRITICAL issues
+- Risk explanation
+- Fix (base image / dependency upgrade)
+
+## 🧠 Final Recommendation
+- What to fix first
+- What to improve long-term
 """
 
-# ----------------------------
-# Call Groq API
-# ----------------------------
+# ------------------------
+# CALL GROQ
+# ------------------------
 response = client.chat.completions.create(
     model="llama-3.3-70b-versatile",
     messages=[{"role": "user", "content": prompt}]
@@ -56,10 +78,10 @@ response = client.chat.completions.create(
 
 result = response.choices[0].message.content
 
-# ----------------------------
-# Save report
-# ----------------------------
-with open("failure_report.md", "w") as f:
+# ------------------------
+# SAVE OUTPUT
+# ------------------------
+with open("auto_healing_report.md", "w") as f:
     f.write(result)
 
-print("✅ AI failure report generated: failure_report.md")
+print("✅ Auto-healing report generated successfully")
