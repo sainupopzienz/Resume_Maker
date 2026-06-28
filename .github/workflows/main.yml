@@ -1,48 +1,37 @@
-name: CI-CD with Security + AI Analysis
-
-on:
-  pull_request:
-  push:
-    branches: [main]
-
 jobs:
   ci:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
 
-      # ------------------------
-      # BUILD IMAGE
-      # ------------------------
+      # --------------------
+      # BUILD
+      # --------------------
       - name: Build Docker image
         run: docker build -t resume-app .
 
-      # ------------------------
-      # SECURITY SCAN (TRIVY)
-      # ------------------------
-      - name: Scan Docker image with Trivy
-        run: |
-          docker run --rm aquasec/trivy image resume-app \
-          --format json -o scan.json
+      # --------------------
+      # TRIVY SCAN (FIXED)
+      # --------------------
+      - name: Run Trivy scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: resume-app
+          format: json
+          output: scan.json
 
-      # ------------------------
-      # AI ANALYSIS (GROQ)
-      # ------------------------
-      - name: AI Security Analysis
+      # --------------------
+      # INSTALL PYTHON DEPENDENCIES
+      # --------------------
+      - name: Install dependencies
+        run: pip install openai
+
+      # --------------------
+      # AI ANALYSIS
+      # --------------------
+      - name: AI Failure Analysis
         if: always()
         run: python scripts/analyze_failure.py
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-
-  deploy:
-    needs: ci
-    runs-on: ubuntu-latest
-    if: success() && github.ref == 'refs/heads/main'
-
-    steps:
-      - name: Deploy to Render
-        env:
-          DEPLOY_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
-        run: curl -f "$DEPLOY_URL"
