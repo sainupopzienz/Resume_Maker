@@ -22,7 +22,7 @@ jobs:
       # CI - SECURITY SCAN
       # --------------------
       - name: Run Trivy scan
-        uses: aquasecurity/trivy-action@0.20.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: resume-app
           format: json
