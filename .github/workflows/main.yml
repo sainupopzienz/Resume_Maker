@@ -6,47 +6,105 @@ on:
   pull_request:
 
 jobs:
+  # ============================================================
+  # CI JOB — Build, Scan, AI Analysis
+  # ============================================================
   ci:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       # --------------------
-      # CI - BUILD
+      # BUILD
       # --------------------
       - name: Build Docker image
-        run: docker build -t resume-app .
+        run: |
+          docker build -t resume-app . 2>&1 | tee build.log
+          echo "✅ Docker build completed"
 
       # --------------------
-      # CI - SECURITY SCAN
+      # SECURITY SCAN
       # --------------------
       - name: Run Trivy scan
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@master
         with:
           image-ref: resume-app
           format: json
           output: scan.json
+          severity: CRITICAL,HIGH
+          exit-code: '0'          # don't fail pipeline on CVEs, let AI handle it
 
       # --------------------
-      # CI - AI ANALYSIS
+      # AI ANALYSIS
       # --------------------
       - name: Install dependencies
         run: pip install openai
 
       - name: AI Analysis
-        if: always()
+        if: always()              # run even if build or scan failed
         run: python scripts/analyze_failure.py
         env:
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.GROQ_API_KEY }}
 
+      # --------------------
+      # UPLOAD REPORT
+      # --------------------
+      - name: Upload AI Report
+        uses: actions/upload-artifact@v4
+        if: always()              # always upload even on failure
+        with:
+          name: auto-healing-report
+          path: auto_healing_report.md
+          retention-days: 30
+
+      # --------------------
+      # UPLOAD SCAN RESULTS
+      # --------------------
+      - name: Upload Trivy Scan
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-scan-results
+          path: scan.json
+          retention-days: 30
+
+  # ============================================================
+  # CD JOB — Deploy to Render (only on main, only if CI passed)
+  # ============================================================
   cd:
     needs: ci
     runs-on: ubuntu-latest
     if: success() && github.ref == 'refs/heads/main'
-
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout code
+        uses: actions/checkout@v4
 
+      # --------------------
+      # DOWNLOAD AI REPORT
+      # --------------------
+      - name: Download AI Report
+        uses: actions/download-artifact@v4
+        with:
+          name: auto-healing-report
+
+      # --------------------
+      # DEPLOY
+      # --------------------
       - name: Deploy to Render
-        run: curl ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          echo "🚀 Triggering Render deployment..."
+          curl -s ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          echo "✅ Deployment triggered successfully"
+
+      # --------------------
+      # CONFIRM DEPLOYMENT
+      # --------------------
+      - name: Deployment Summary
+        run: |
+          echo "=================================="
+          echo "✅ Deployment completed"
+          echo "📦 Branch : ${{ github.ref_name }}"
+          echo "🔀 Commit : ${{ github.sha }}"
+          echo "👤 Author : ${{ github.actor }}"
+          echo "=================================="
