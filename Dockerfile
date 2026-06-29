@@ -1,5 +1,7 @@
 # ── Stage: Serve with Nginx ──────────────────────────
-FROM nginx:alpine
+#FROM nginx:alpine
+#vulnerable one
+FROM nginx:1.14.0
 
 # Remove default nginx static assets
 RUN rm -rf /usr/share/nginx/html/*
