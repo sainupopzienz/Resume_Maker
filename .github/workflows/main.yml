@@ -16,12 +16,19 @@ jobs:
         uses: actions/checkout@v4
 
       # --------------------
+      # INSTALL DEPS FIRST
+      # --------------------
+      - name: Install Python dependencies
+        run: pip install openai
+
+      # --------------------
       # BUILD
       # --------------------
       - name: Build Docker image
         run: |
-          docker build -t resume-app . 2>&1 | tee build.log
+          docker build -t resume-app . --load 2>&1 | tee build.log
           echo "✅ Docker build completed"
+          docker images resume-app
 
       # --------------------
       # SECURITY SCAN
@@ -33,20 +40,18 @@ jobs:
           format: json
           output: scan.json
           severity: CRITICAL,HIGH
-          exit-code: '0'          # don't fail pipeline on CVEs, let AI handle it
-          vuln-type: 'os,library'        # ← scan both OS and libraries
-          ignore-unfixed: true           # ← ignore CVEs with no fix yet
+          exit-code: '0'
+          vuln-type: 'os,library'
+          ignore-unfixed: true
 
       # --------------------
       # AI ANALYSIS
       # --------------------
-      - name: Install dependencies
-        run: pip install openai
-
       - name: AI Analysis
-        if: always()              # run even if build or scan failed
+        if: always()
         run: python scripts/analyze_failure.py
         env:
+          OPENROUTER_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
 
       # --------------------
@@ -54,7 +59,7 @@ jobs:
       # --------------------
       - name: Upload AI Report
         uses: actions/upload-artifact@v4
-        if: always()              # always upload even on failure
+        if: always()
         with:
           name: auto-healing-report
           path: auto_healing_report.md
@@ -96,7 +101,12 @@ jobs:
       - name: Deploy to Render
         run: |
           echo "🚀 Triggering Render deployment..."
-          curl -s ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.RENDER_DEPLOY_HOOK_URL }})
+          echo "Response code: $RESPONSE"
+          if [ "$RESPONSE" != "200" ]; then
+            echo "❌ Render deploy failed with code $RESPONSE"
+            exit 1
+          fi
           echo "✅ Deployment triggered successfully"
 
       # --------------------
