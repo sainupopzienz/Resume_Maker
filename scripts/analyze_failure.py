@@ -72,7 +72,7 @@ OUTPUT FORMAT:
 # CALL GROQ
 # ------------------------
 response = client.chat.completions.create(
-    model="meta-llama/llama-3.3-70b-instruct",   
+    model="meta-llama/llama-3.3-70b-instruct:free",   
     messages=[{"role": "user", "content": prompt}]
 )
 
