@@ -45,7 +45,7 @@ jobs:
         if: always()              # run even if build or scan failed
         run: python scripts/analyze_failure.py
         env:
-          OPENROUTER_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
 
       # --------------------
       # UPLOAD REPORT
