@@ -4,15 +4,13 @@ import os
 import time
 
 # ------------------------
-# OPENROUTER FREE MODELS FALLBACK LIST
+# UPDATED FREE MODELS (June 2026)
 # ------------------------
 FREE_MODELS = [
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "meta-llama/llama-3.1-8b-instruct:free",
-    "mistralai/mistral-7b-instruct:free",
-    "google/gemma-3-12b-it:free",
-    "deepseek/deepseek-r1:free",
-    "qwen/qwen2.5-72b-instruct:free",
+    "openrouter/free",                              # ← Auto-picks best free model
+    "meta-llama/llama-3.3-70b-instruct:free",      # ← Add :free + limit tokens
+    "nvidia/nemotron-nano-12b-v2-vl:free",         # ← Free by NVIDIA
+    "openai/gpt-4o-mini:free",                     # ← If available
 ]
 
 client = OpenAI(
@@ -84,9 +82,11 @@ def call_with_fallback(prompt, retries_per_model=2):
         for attempt in range(retries_per_model):
             try:
                 print(f"🔄 Trying model: {model} (attempt {attempt + 1})")
+
                 response = client.chat.completions.create(
                     model=model,
                     messages=[{"role": "user", "content": prompt}],
+                    max_tokens=4096,   # ← CRITICAL FIX: was causing 400 error
                     extra_headers={
                         "HTTP-Referer": "https://github.com",
                         "X-Title": "DevOps AI Analyzer"
@@ -105,18 +105,26 @@ def call_with_fallback(prompt, retries_per_model=2):
                     time.sleep(wait)
 
                 elif "402" in error_str:
-                    print(f"❌ Credits issue on {model}. Skipping...")
+                    print(f"❌ No credits for {model}. Skipping...")
+                    break
+
+                elif "404" in error_str:
+                    print(f"❌ Model {model} not found / no longer free. Skipping...")
+                    break
+
+                elif "400" in error_str and "max_tokens" in error_str:
+                    print(f"❌ Token limit error on {model}. Skipping...")
                     break
 
                 elif "503" in error_str or "502" in error_str:
-                    print(f"⚠️ Model {model} unavailable. Trying next...")
+                    print(f"⚠️ Model {model} unavailable. Skipping...")
                     break
 
                 else:
                     print(f"❌ Unknown error on {model}: {e}")
                     break
 
-    raise Exception("❌ All free models failed. Check OpenRouter status.")
+    raise Exception("❌ All free models failed.")
 
 
 # ------------------------
