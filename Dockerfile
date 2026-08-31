@@ -5,7 +5,8 @@ FROM nginx:alpine
 RUN rm -rf /usr/share/nginx/html/*
 
 # Copy the resume builder app
-COPY resume-builder.html /usr/share/nginx/html/index.html
+#COPY resume-builder.html /usr/share/nginx/html/index.html
+COPY friend.html /usr/share/nginx/html/index.html
 
 #build issue manually making
 #COPY bresume-builder.html /usr/share/nginx/html/index.html
