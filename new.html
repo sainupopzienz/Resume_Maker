@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Resume Builder</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+
+/* ── APP SHELL ── */
+body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);min-height:100vh;color:#333}
+
+header{text-align:center;padding:44px 20px 28px}
+header h1{font-size:2.6rem;font-weight:800;color:#fff}
+header h1 span{color:#a78bfa}
+header p{color:#c4b5fd;margin-top:6px;font-size:1rem}
+
+.app{display:grid;grid-template-columns:1fr 1fr;gap:28px;max-width:1440px;margin:0 auto;padding:0 24px 60px}
+@media(max-width:960px){.app{grid-template-columns:1fr}}
+
+/* ── FORM PANEL ── */
+.form-panel{background:rgba(255,255,255,.05);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:28px}
+
+.sec-title{font-size:.65rem;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#a78bfa;margin:26px 0 12px;display:flex;align-items:center;gap:10px}
+.sec-title::after{content:'';flex:1;height:1px;background:rgba(167,139,250,.3)}
+.sec-title:first-child{margin-top:0}
+
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.row.full{grid-template-columns:1fr}
+
+label{display:flex;flex-direction:column;gap:5px;font-size:.75rem;font-weight:600;color:#d1c4e9;letter-spacing:.3px}
+input,textarea,select{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:9px;padding:9px 13px;color:#fff;font-size:.88rem;font-family:inherit;outline:none;width:100%;transition:border-color .2s,background .2s}
+input::placeholder,textarea::placeholder{color:rgba(255,255,255,.3)}
+input:focus,textarea:focus,select:focus{border-color:#a78bfa;background:rgba(167,139,250,.12)}
+textarea{resize:vertical;min-height:80px}
+select option{background:#302b63;color:#fff}
+
+.entry-block{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px;margin-bottom:10px;position:relative}
+.entry-block .row{margin-bottom:10px}
+.entry-block .row:last-of-type{margin-bottom:0}
+
+.btn-remove{position:absolute;top:10px;right:10px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171;border-radius:7px;padding:3px 9px;font-size:.72rem;cursor:pointer;transition:background .2s}
+.btn-remove:hover{background:rgba(239,68,68,.3)}
+
+.btn-add{width:100%;background:rgba(167,139,250,.1);border:1px dashed rgba(167,139,250,.4);color:#a78bfa;border-radius:9px;padding:9px;font-size:.83rem;cursor:pointer;transition:background .2s;margin-top:2px}
+.btn-add:hover{background:rgba(167,139,250,.2)}
+
+/* skill-category rows */
+.skill-row{display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:10px}
+
+.btn-download{width:100%;margin-top:26px;background:linear-gradient(135deg,#7c3aed,#a78bfa);border:none;border-radius:12px;padding:13px;color:#fff;font-size:.95rem;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:transform .15s,box-shadow .15s;box-shadow:0 4px 20px rgba(124,58,237,.4)}
+.btn-download:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(124,58,237,.6)}
+.btn-download:active{transform:translateY(0)}
+
+/* ── PREVIEW ── */
+.preview-panel{position:sticky;top:24px;height:fit-content}
+.preview-label{font-size:.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#a78bfa;margin-bottom:12px}
+.preview-wrap{background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.4);overflow:hidden;transform-origin:top center}
+
+/* ═══════════════════════════════════════════════
+   RESUME TEMPLATE — navy / Calibri professional style
+═══════════════════════════════════════════════ */
+#resume{
+  font-family:'Calibri','Segoe UI',Arial,sans-serif;
+  background:#fff;
+  color:#222;
+  width:794px;
+  min-height:1123px;
+  font-size:10pt;
+  line-height:1.45;
+}
+
+.rv-navy{color:#1F3864}
+
+/* header */
+.rv-header{text-align:center;padding:34px 44px 14px}
+.rv-name{font-size:24pt;font-weight:800;color:#1F3864;letter-spacing:1px}
+.rv-role{font-size:12pt;font-style:italic;color:#555;margin-top:4px;font-weight:400}
+.rv-contact-bar{padding:10px 44px 0;text-align:center;font-size:9pt;color:#333}
+.rv-contact-bar span.sep{color:#999;margin:0 8px}
+.rv-hr{margin:14px 44px 0;border-bottom:2px solid #1F3864}
+
+/* body */
+.rv-body{padding:6px 44px 34px}
+
+/* section */
+.rv-sec{margin-bottom:8px}
+.rv-sec-title{font-size:11pt;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#1F3864;border-bottom:1px solid #1F3864;padding-bottom:4px;margin:16px 0 8px}
+
+/* paragraph */
+.rv-para{font-size:10pt;color:#333;line-height:1.55}
+
+/* work history */
+.rv-job{margin-bottom:10px;page-break-inside:avoid}
+.rv-job-header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:1px}
+.rv-jobtitle{font-size:10.5pt;font-weight:700;color:#333}
+.rv-dates{font-size:9.5pt;font-weight:700;color:#1F3864;white-space:nowrap}
+.rv-org{font-size:9.5pt;font-style:italic;color:#555;margin-bottom:3px}
+.rv-bullets{list-style:none;padding:0;margin-top:2px}
+.rv-bullets li{font-size:10pt;color:#333;padding:1px 0 1px 16px;position:relative;line-height:1.5}
+.rv-bullets li::before{content:'•';position:absolute;left:2px;color:#333}
+
+/* technical skills groups */
+.rv-skillgroup{margin-bottom:6px;page-break-inside:avoid}
+.rv-skillgroup-title{font-size:10pt;font-weight:700;color:#1F3864;margin-bottom:2px}
+
+/* education */
+.rv-edu{margin-bottom:8px}
+.rv-edu-degree{font-size:10.5pt;font-weight:700;color:#333}
+.rv-edu-line{font-size:9.7pt;color:#333}
+
+/* personal details */
+.rv-pd-line{font-size:10pt;color:#333;margin-bottom:3px}
+.rv-pd-label{font-weight:700;color:#333}
+
+/* declaration */
+.rv-decl-foot{display:flex;justify-content:space-between;margin-top:16px;font-size:10pt;color:#333}
+.rv-decl-sign{font-weight:700}
+
+/* empty-state placeholder */
+.rv-placeholder{font-size:9pt;color:#aaa}
+
+/* scrollbar */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-thumb{background:rgba(167,139,250,.4);border-radius:99px}
+
+/* ═══════════════════════════════════════════════
+   PRINT — hide everything except the resume itself
+═══════════════════════════════════════════════ */
+@media print{
+  body{background:#fff !important}
+  header,.form-panel,.preview-label{display:none !important}
+  .app{display:block !important;padding:0 !important;max-width:none !important;gap:0 !important}
+  .preview-panel{position:static !important}
+  .preview-wrap{box-shadow:none !important;border-radius:0 !important;background:#fff !important}
+  #resume{width:auto !important;min-height:auto !important;margin:0 auto !important}
+  @page{size:A4 portrait;margin:12mm}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Resume <span>Builder</span></h1>
+  <p>Fill in your details · Preview live · Download as PDF</p>
+</header>
+
+<div class="app">
+
+<!-- ══ FORM ══ -->
+<div class="form-panel">
+
+  <div class="sec-title">Personal Info</div>
+  <div class="row">
+    <label>Full Name <input id="fullName" placeholder="Asiya S Khan" oninput="render()"></label>
+    <label>Job Title / Role <input id="jobTitle" placeholder="Neurotechnologist" oninput="render()"></label>
+  </div>
+  <div class="row">
+    <label>Email <input id="email" placeholder="you@email.com" oninput="render()"></label>
+    <label>Phone <input id="phone" placeholder="+91 0000000000" oninput="render()"></label>
+  </div>
+  <div class="row">
+    <label>Current Location <input id="location" placeholder="City, State, Country" oninput="render()"></label>
+    <label>LinkedIn (optional) <input id="linkedin" placeholder="linkedin.com/in/you" oninput="render()"></label>
+  </div>
+
+  <div class="sec-title">Career Objective</div>
+  <label>Objective
+    <textarea id="objective" rows="4" placeholder="To obtain employment in a position offering challenges..." oninput="render()"></textarea>
+  </label>
+
+  <div class="sec-title">Work Experience</div>
+  <div id="expList"></div>
+  <button class="btn-add" onclick="addEntry('exp')">+ Add Job</button>
+
+  <div class="sec-title">Technical Skills</div>
+  <div id="skillsList"></div>
+  <button class="btn-add" onclick="addSkillRow()">+ Add Skill Category</button>
+
+  <div class="sec-title">Equipment Handled</div>
+  <label>Equipment (comma-separated)
+    <textarea id="equipment" rows="2" placeholder="Nicolet (EEG and ENMG), Neuromax (EEG)..." oninput="render()"></textarea>
+  </label>
+
+  <div class="sec-title">Education</div>
+  <div id="eduList"></div>
+  <button class="btn-add" onclick="addEntry('edu')">+ Add Education</button>
+
+  <div class="sec-title">Key Skills</div>
+  <div id="keySkillList"></div>
+  <button class="btn-add" onclick="addEntry('keySkill')">+ Add Key Skill</button>
+
+  <div class="sec-title">Languages</div>
+  <label>Languages (comma-separated)
+    <input id="languages" placeholder="English, Malayalam, Tamil, Hindi" oninput="render()">
+  </label>
+
+  <div class="sec-title">Personal Details</div>
+  <div class="row">
+    <label>Date of Birth <input id="dob" placeholder="DD/MM/YYYY" oninput="render()"></label>
+    <label>Alternate Mobile No <input id="altPhone" placeholder="+91 0000000000" oninput="render()"></label>
+  </div>
+  <div class="row full">
+    <label>Permanent Address <textarea id="permAddress" rows="2" placeholder="House, Street, City, State, PIN" oninput="render()"></textarea></label>
+  </div>
+
+  <div class="sec-title">Declaration</div>
+  <div class="row full">
+    <label>Declaration Statement <textarea id="declText" rows="2" oninput="render()"></textarea></label>
+  </div>
+  <div class="row">
+    <label>Place <input id="place" placeholder="Kerala, India" oninput="render()"></label>
+  </div>
+
+  <button class="btn-download" onclick="downloadPDF()">🖨 Print / Save as PDF</button>
+</div>
+
+<!-- ══ PREVIEW ══ -->
+<div class="preview-panel">
+  <div class="preview-label">Live Preview</div>
+  <div class="preview-wrap">
+    <div id="resume"></div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+// ── STATE ──────────────────────────────────────────
+const S = {
+  skills:   [],   // {id, category, items}
+  exp:      [],   // {id, company, jobtitle, dates, bullets}
+  edu:      [],   // {id, degree, school, detail, date}
+  keySkill: [],   // {id, name}
+};
+
+let idSeed = 1;
+const uid = () => idSeed++;
+
+// ── SKILL ROWS (Technical Skills) ─────────────────
+function addSkillRow(data={}) {
+  const id = uid();
+  S.skills.push({ id, category: data.category||'', items: data.items||'' });
+  renderSkillForms();
+  render();
+}
+function removeSkillRow(id){ S.skills=S.skills.filter(s=>s.id!==id); renderSkillForms(); render(); }
+function updateSkill(id,field,val){ const s=S.skills.find(s=>s.id===id); if(s){s[field]=val; render();} }
+
+function renderSkillForms(){
+  const c=document.getElementById('skillsList'); c.innerHTML='';
+  S.skills.forEach(s=>{
+    const d=document.createElement('div'); d.className='entry-block';
+    d.innerHTML=`
+      <button class="btn-remove" onclick="removeSkillRow(${s.id})">✕</button>
+      <div class="skill-row">
+        <label>Category<input placeholder="Electroencephalography (EEG)" value="${esc(s.category)}" oninput="updateSkill(${s.id},'category',this.value)"></label>
+        <label>Items (comma-separated)<input placeholder="Video EEG, Portable EEG..." value="${esc(s.items)}" oninput="updateSkill(${s.id},'items',this.value)"></label>
+      </div>`;
+    c.appendChild(d);
+  });
+}
+
+// ── GENERIC ENTRIES ───────────────────────────────
+const entryTemplates = {
+  exp: {
+    render(e){ return `
+      <div class="entry-block">
+        <button class="btn-remove" onclick="removeEntry('exp',${e.id})">✕</button>
+        <div class="row">
+          <label>Job Title<input placeholder="Neurotechnologist" value="${esc(e.jobtitle)}" oninput="updateEntry('exp',${e.id},'jobtitle',this.value)"></label>
+          <label>Dates<input placeholder="August 2025 - Present" value="${esc(e.dates)}" oninput="updateEntry('exp',${e.id},'dates',this.value)"></label>
+        </div>
+        <div class="row full" style="margin-bottom:10px">
+          <label>Organization / Department<input placeholder="KIMS Health Hospital, Kollam" value="${esc(e.company)}" oninput="updateEntry('exp',${e.id},'company',this.value)"></label>
+        </div>
+        <label>Bullet Points (one per line)<textarea rows="4" placeholder="Independently perform and monitor...&#10;Conduct Nerve Conduction Studies..." oninput="updateEntry('exp',${e.id},'bullets',this.value)">${esc(e.bullets)}</textarea></label>
+      </div>`; },
+    defaults(){ return {company:'',dates:'',jobtitle:'',bullets:''}; }
+  },
+  edu: {
+    render(e){ return `
+      <div class="entry-block">
+        <button class="btn-remove" onclick="removeEntry('edu',${e.id})">✕</button>
+        <div class="row">
+          <label>Degree / Level<input placeholder="Diploma in Neuro Technology" value="${esc(e.degree)}" oninput="updateEntry('edu',${e.id},'degree',this.value)"></label>
+          <label>Year of Passing<input placeholder="2022" value="${esc(e.date)}" oninput="updateEntry('edu',${e.id},'date',this.value)"></label>
+        </div>
+        <div class="row full" style="margin-bottom:10px">
+          <label>School / College<input placeholder="Govt. Medical College, Trivandrum" value="${esc(e.school)}" oninput="updateEntry('edu',${e.id},'school',this.value)"></label>
+        </div>
+        <div class="row full">
+          <label>Board / Percentage (optional)<input placeholder="Kerala State Board | Percentage: 85%" value="${esc(e.detail)}" oninput="updateEntry('edu',${e.id},'detail',this.value)"></label>
+        </div>
+      </div>`; },
+    defaults(){ return {degree:'',school:'',detail:'',date:''}; }
+  },
+  keySkill: {
+    render(e){ return `
+      <div class="entry-block">
+        <button class="btn-remove" onclick="removeEntry('keySkill',${e.id})">✕</button>
+        <div class="row full">
+          <label>Key Skill<input placeholder="Strong patient handling and clinical documentation skills" value="${esc(e.name)}" oninput="updateEntry('keySkill',${e.id},'name',this.value)"></label>
+        </div>
+      </div>`; },
+    defaults(){ return {name:''}; }
+  },
+};
+
+function addEntry(type, data={}){
+  const id=uid();
+  S[type].push({id,...entryTemplates[type].defaults(),...data});
+  renderAllForms(); render();
+}
+function removeEntry(type,id){ S[type]=S[type].filter(e=>e.id!==id); renderAllForms(); render(); }
+function updateEntry(type,id,field,val){ const e=S[type].find(e=>e.id===id); if(e){e[field]=val; render();} }
+
+function renderAllForms(){
+  ['exp','edu','keySkill'].forEach(type=>{
+    const c=document.getElementById(type+'List'); c.innerHTML='';
+    S[type].forEach(e=>{ c.innerHTML+=entryTemplates[type].render(e); });
+  });
+}
+
+// ── UTILS ─────────────────────────────────────────
+function esc(s=''){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function bulletsToHtml(text=''){
+  const lines=text.split('\n').filter(l=>l.trim());
+  if(!lines.length) return '';
+  return '<ul class="rv-bullets">'+lines.map(l=>`<li>${esc(l.replace(/^[•\-]\s*/,'').trim())}</li>`).join('')+'</ul>';
+}
+
+function csvToBullets(text=''){
+  const items=text.split(',').map(t=>t.trim()).filter(Boolean);
+  if(!items.length) return '';
+  return '<ul class="rv-bullets">'+items.map(i=>`<li>${esc(i)}</li>`).join('')+'</ul>';
+}
+
+function csvToInline(text=''){
+  return text.split(',').map(t=>t.trim()).filter(Boolean).map(esc).join(' <span class="sep">•</span> ');
+}
+
+// ── RENDER RESUME ─────────────────────────────────
+function render(){
+  const fullName    = document.getElementById('fullName').value||'YOUR NAME';
+  const jobTitle     = document.getElementById('jobTitle').value||'';
+  const email        = document.getElementById('email').value;
+  const phone        = document.getElementById('phone').value;
+  const location     = document.getElementById('location').value;
+  const linkedin     = document.getElementById('linkedin').value;
+  const objective    = document.getElementById('objective').value;
+  const equipment    = document.getElementById('equipment').value;
+  const languages    = document.getElementById('languages').value;
+  const dob          = document.getElementById('dob').value;
+  const altPhone     = document.getElementById('altPhone').value;
+  const permAddress  = document.getElementById('permAddress').value;
+  const declText     = document.getElementById('declText').value;
+  const place        = document.getElementById('place').value;
+
+  // contact bar
+  const contactParts=[phone,email,location,linkedin].filter(Boolean);
+  const contactBar = contactParts.map(esc).join(' <span class="sep">|</span> ');
+
+  // career objective
+  const objectiveSection = objective
+    ? `<div class="rv-sec"><div class="rv-sec-title">Career Objective</div><div class="rv-para">${esc(objective)}</div></div>`
+    : '';
+
+  // work experience
+  const expSection = S.exp.length
+    ? `<div class="rv-sec"><div class="rv-sec-title">Work Experience</div>${
+        S.exp.map(e=>`
+          <div class="rv-job">
+            <div class="rv-job-header">
+              <span class="rv-jobtitle">${esc(e.jobtitle||'Job Title')}</span>
+              <span class="rv-dates">${esc(e.dates)}</span>
+            </div>
+            <div class="rv-org">${esc(e.company)}</div>
+            ${bulletsToHtml(e.bullets)}
+          </div>`).join('')
+      }</div>`
+    : '';
+
+  // technical skills
+  const skillsSection = S.skills.length
+    ? `<div class="rv-sec"><div class="rv-sec-title">Technical Skills</div>${
+        S.skills.map(s=>`
+          <div class="rv-skillgroup">
+            <div class="rv-skillgroup-title">${esc(s.category)}</div>
+            ${csvToBullets(s.items)}
+          </div>`).join('')
+      }</div>`
+    : '';
+
+  // equipment handled
+  const equipmentSection = equipment.trim()
+    ? `<div class="rv-sec"><div class="rv-sec-title">Equipment Handled</div><div class="rv-para">${csvToInline(equipment)}</div></div>`
+    : '';
+
+  // education
+  const eduSection = S.edu.length
+    ? `<div class="rv-sec"><div class="rv-sec-title">Education</div>${
+        S.edu.map(e=>`
+          <div class="rv-edu">
+            <div class="rv-edu-degree">${esc(e.degree)}</div>
+            <div class="rv-edu-line">${esc(e.school)}${e.detail?' | '+esc(e.detail):''}${e.date?'  |  Year of Passing: '+esc(e.date):''}</div>
+          </div>`).join('')
+      }</div>`
+    : '';
+
+  // key skills
+  const keySkillSection = S.keySkill.length
+    ? `<div class="rv-sec"><div class="rv-sec-title">Key Skills</div><ul class="rv-bullets">${
+        S.keySkill.map(k=>`<li>${esc(k.name)}</li>`).join('')
+      }</ul></div>`
+    : '';
+
+  // languages
+  const languagesSection = languages.trim()
+    ? `<div class="rv-sec"><div class="rv-sec-title">Languages</div><div class="rv-para">${csvToInline(languages)}</div></div>`
+    : '';
+
+  // personal details
+  const pdLines=[];
+  if(dob) pdLines.push(`<div class="rv-pd-line"><span class="rv-pd-label">Date of Birth: </span>${esc(dob)}</div>`);
+  if(altPhone) pdLines.push(`<div class="rv-pd-line"><span class="rv-pd-label">Alternate Mobile No: </span>${esc(altPhone)}</div>`);
+  if(permAddress) pdLines.push(`<div class="rv-pd-line"><span class="rv-pd-label">Permanent Address: </span>${esc(permAddress)}</div>`);
+  if(location) pdLines.push(`<div class="rv-pd-line"><span class="rv-pd-label">Current Location: </span>${esc(location)}</div>`);
+  const personalSection = pdLines.length
+    ? `<div class="rv-sec"><div class="rv-sec-title">Personal Details</div>${pdLines.join('')}</div>`
+    : '';
+
+  // declaration
+  const declSection = declText
+    ? `<div class="rv-sec"><div class="rv-sec-title">Declaration</div>
+        <div class="rv-para">${esc(declText)}</div>
+        <div class="rv-decl-foot">
+          <span>${place?'Place: '+esc(place):''}</span>
+          <span class="rv-decl-sign">${esc(fullName)}</span>
+        </div>
+      </div>`
+    : '';
+
+  document.getElementById('resume').innerHTML=`
+  <div class="rv-header">
+    <div class="rv-name">${esc(fullName)}</div>
+    ${jobTitle?`<div class="rv-role">${esc(jobTitle)}</div>`:''}
+  </div>
+  ${contactBar?`<div class="rv-contact-bar">${contactBar}</div>`:''}
+  <div class="rv-hr"></div>
+  <div class="rv-body">
+    ${objectiveSection}
+    ${expSection}
+    ${skillsSection}
+    ${equipmentSection}
+    ${eduSection}
+    ${keySkillSection}
+    ${languagesSection}
+    ${personalSection}
+    ${declSection}
+  </div>`;
+
+  document.title = (fullName||'Resume').trim() + ' - Resume';
+}
+
+// ── PDF — print the page itself (no popup, no about:blank) ──
+function downloadPDF(){
+  window.print();
+}
+
+// ── INIT ──────────────────────────────────────────
+// Seed with Asiya S Khan's resume data
+document.getElementById('fullName').value   = 'Asiya S Khan';
+document.getElementById('jobTitle').value   = 'Neurotechnician';
+document.getElementById('email').value      = 'asiyaasiya591@gmail.com';
+document.getElementById('phone').value      = '+91 702325849';
+document.getElementById('location').value   = 'Kollam, Kerala, India';
+document.getElementById('linkedin').value   = 'linkedin.com/in/asiya-s-khan';
+document.getElementById('objective').value  = 'To obtain employment in a position offering challenges, accountability, and an opportunity for career advancement, and to improve my knowledge and skills through the experience I will acquire from work, and to be able to contribute to the benefit of the institution and to society.';
+document.getElementById('equipment').value  = 'Nicolet (EEG and ENMG), Neuromax (EEG), Neurocompact (EEG), Dantec (NCS, EPs), Clarity (NCS, EMG, EPs), RMS (EEG)';
+document.getElementById('languages').value  = 'English, Malayalam, Tamil, Hindi';
+document.getElementById('dob').value        = '23/02/2001';
+document.getElementById('altPhone').value   = '+91 323434702';
+document.getElementById('permAddress').value= 'A N House, Vattappara, Cheriyavelinalloor P O, Velinalloor, Kollam, Kerala, India - 691516';
+document.getElementById('declText').value   = 'I hereby declare that the details mentioned above are true and correct to the best of my knowledge.';
+document.getElementById('place').value      = 'Kerala, India';
+
+addEntry('exp',{
+  jobtitle:'Neurotechnologist', company:'KIMS Health Hospital, Kollam', dates:'August 2025 - Present',
+  bullets:`Independently perform and monitor a full range of EEG studies, including Video EEG, Portable EEG, Amplitude-Integrated EEG, and Neonatal EEG.
+Conduct Nerve Conduction Studies (NCS), Repetitive Nerve Stimulation (RNS), Blink Reflex, H-Reflex, and Sympathetic Skin Response (SSR) testing.
+Perform Electromyography (EMG) and Evoked Potential studies - VEP, BAEP, and SSEP - supporting accurate neurological diagnosis.
+Operate and maintain diagnostic equipment including Nicolet, Neuromax, Neurocompact, Dantec, Clarity, and RMS systems.
+Prepare detailed, accurate neurodiagnostic reports and maintain electronic patient records.`
+});
+addEntry('exp',{
+  jobtitle:'Neuro Technician', company:'KIMS Alshifa Hospital, Perinthalmanna - Department of Neurology', dates:'January 2023 - July 2025',
+  bullets:`Carried out routine and specialized EEG, NCS, EMG, and Evoked Potential procedures under the Neurology department.
+Assisted physicians in diagnostic workups by delivering accurate, well-documented neurodiagnostic reports.
+Ensured proper functioning, calibration, and troubleshooting of neurodiagnostic equipment.`
+});
+addEntry('exp',{
+  jobtitle:'Internship Trainee', company:'Govt. Medical College, Trivandrum - Department of Pediatric Neurology (SAT)', dates:'June 2022 - December 2022',
+  bullets:`Gained hands-on clinical exposure in pediatric neurodiagnostic procedures under expert supervision.
+Assisted in performing EEG and related neurophysiological tests for pediatric patients.
+Developed foundational skills in patient handling, equipment operation, and clinical documentation.`
+});
+
+addSkillRow({category:'Electroencephalography (EEG)', items:'Video EEG, Portable EEG, Amplitude-Integrated EEG, Neonatal EEG'});
+addSkillRow({category:'Nerve Conduction Study (NCS)', items:'Repetitive Nerve Stimulation (RNS), Blink Reflex, H-Reflex, Sympathetic Skin Response (SSR)'});
+addSkillRow({category:'Electromyography (EMG)', items:'EMG studies'});
+addSkillRow({category:'Evoked Potentials', items:'Visual Evoked Potential (VEP), Brainstem Auditory Evoked Potential (BAEP), Somatosensory Evoked Potential (SSEP)'});
+
+addEntry('edu',{degree:'Diploma in Neuro Technology', school:'Govt. Medical College, Trivandrum', detail:'', date:'2022'});
+addEntry('edu',{degree:'Higher Secondary', school:'KPM HSS, Cheriyavelinalloor, Kollam, Kerala', detail:'Kerala State Board | Percentage: 85%', date:'2019'});
+addEntry('edu',{degree:'High School', school:'KPM HSS, Cheriyavelinalloor, Kollam, Kerala', detail:'Kerala State Board | Percentage: 88%', date:'2017'});
+
+addEntry('keySkill',{name:'Computer Knowledge - MS Office'});
+addEntry('keySkill',{name:'Strong patient handling and clinical documentation skills'});
+addEntry('keySkill',{name:'Equipment calibration, troubleshooting, and maintenance'});
+addEntry('keySkill',{name:'Attention to detail and accurate diagnostic reporting'});
+
+render();
+</script>
+</body>
+</html>
