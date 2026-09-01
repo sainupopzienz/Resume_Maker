@@ -4,6 +4,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Resume Builder</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 
@@ -212,7 +214,7 @@ select option{background:#302b63;color:#fff}
     <label>Place <input id="place" placeholder="Kerala, India" oninput="render()"></label>
   </div>
 
-  <button class="btn-download" onclick="downloadPDF()">🖨 Print / Save as PDF</button>
+  <button class="btn-download" onclick="downloadPDF()">⬇ Download as PDF</button>
 </div>
 
 <!-- ══ PREVIEW ══ -->
@@ -464,9 +466,69 @@ function render(){
   document.title = (fullName||'Resume').trim() + ' - Resume';
 }
 
-// ── PDF — print the page itself (no popup, no about:blank) ──
-function downloadPDF(){
-  window.print();
+// ── PDF — generate a real PDF file directly (no browser print dialog) ──
+async function downloadPDF(){
+  const btn = document.querySelector('.btn-download');
+  const originalLabel = btn.textContent;
+  btn.textContent = '⏳ Generating PDF...';
+  btn.disabled = true;
+
+  try{
+    const resumeEl = document.getElementById('resume');
+
+    const canvas = await html2canvas(resumeEl, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff'
+    });
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+
+    const pageWidthMm  = 210;
+    const pageHeightMm = 297;
+
+    const imgWidthMm  = pageWidthMm;
+    const imgHeightMm = (canvas.height * imgWidthMm) / canvas.width;
+
+    const pxPerMm = canvas.width / imgWidthMm;
+    const pageHeightPx = Math.floor(pageHeightMm * pxPerMm);
+
+    let renderedPx = 0;
+    let pageIndex = 0;
+
+    while (renderedPx < canvas.height) {
+      const sliceHeightPx = Math.min(pageHeightPx, canvas.height - renderedPx);
+
+      const sliceCanvas = document.createElement('canvas');
+      sliceCanvas.width = canvas.width;
+      sliceCanvas.height = sliceHeightPx;
+      const ctx = sliceCanvas.getContext('2d');
+      ctx.drawImage(
+        canvas,
+        0, renderedPx, canvas.width, sliceHeightPx,
+        0, 0, canvas.width, sliceHeightPx
+      );
+
+      const sliceImgData = sliceCanvas.toDataURL('image/jpeg', 0.97);
+      const sliceHeightMm = (sliceHeightPx * imgWidthMm) / canvas.width;
+
+      if (pageIndex > 0) pdf.addPage();
+      pdf.addImage(sliceImgData, 'JPEG', 0, 0, imgWidthMm, sliceHeightMm);
+
+      renderedPx += sliceHeightPx;
+      pageIndex++;
+    }
+
+    const fullName = (document.getElementById('fullName').value || 'Resume').trim();
+    pdf.save(`${fullName} - Resume.pdf`);
+  } catch(err){
+    console.error(err);
+    alert('Something went wrong generating the PDF. Please try again.');
+  } finally {
+    btn.textContent = originalLabel;
+    btn.disabled = false;
+  }
 }
 
 // ── INIT ──────────────────────────────────────────
